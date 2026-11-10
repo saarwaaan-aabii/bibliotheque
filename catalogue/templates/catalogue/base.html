@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Bibliothèque{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'catalogue/style.css' %}">
+</head>
+<body>
+  <nav>
+    <strong>📚 Bibliothèque</strong>
+    <a href="{% url 'livre_liste' %}">Livres</a>
+    <a href="{% url 'emprunt_creer' %}">Nouvel emprunt</a>
+    <a href="/admin/">Admin</a>
+  </nav>
+  <main>
+    {% if messages %}
+      {% for message in messages %}
+        <p class="message {{ message.tags }}">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
