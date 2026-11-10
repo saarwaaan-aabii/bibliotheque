@@ -1,0 +1,20 @@
+{% extends "catalogue/base.html" %}
+{% block content %}
+<h1>Catalogue ({{ livres|length }} livre{{ livres|length|pluralize }})</h1>
+<p><a class="btn" href="{% url 'livre_creer' %}">+ Nouveau livre</a></p>
+<table>
+  <thead><tr><th>Titre</th><th>Auteur</th><th>Année</th><th>Disponibilité</th></tr></thead>
+  <tbody>
+  {% for livre in livres %}
+    <tr>
+      <td><a href="{% url 'livre_detail' livre.pk %}">{{ livre.titre }}</a></td>
+      <td>{{ livre.auteur }}</td>
+      <td>{{ livre.annee|default:"—" }}</td>
+      <td>{% if livre.disponible %}<span class="ok">Disponible</span>{% else %}<span class="ko">Emprunté</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">Aucun livre.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

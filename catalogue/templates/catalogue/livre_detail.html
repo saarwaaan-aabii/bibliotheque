@@ -1,0 +1,40 @@
+{% extends "catalogue/base.html" %}
+{% block title %}{{ livre.titre }}{% endblock %}
+{% block content %}
+<h1>{{ livre.titre|upper }}</h1>
+<ul>
+  <li>Auteur : {{ livre.auteur }}</li>
+  <li>ISBN : {{ livre.isbn }}</li>
+  <li>Année : {{ livre.annee|default:"inconnue" }}</li>
+  <li>Statut :
+    {% if emprunt_en_cours %}
+      <span class="ko">Emprunté par {{ emprunt_en_cours.adherent }}</span>
+    {% else %}
+      <span class="ok">Disponible</span>
+    {% endif %}
+  </li>
+</ul>
+<p>
+  <a class="btn" href="{% url 'livre_modifier' livre.pk %}">Modifier</a>
+  {% if emprunt_en_cours %}
+    <form class="inline" method="post" action="{% url 'emprunt_retour' emprunt_en_cours.pk %}">
+      {% csrf_token %}<button>Enregistrer le retour</button>
+    </form>
+  {% else %}
+    <a class="btn" href="{% url 'emprunt_creer' %}?livre={{ livre.pk }}">Emprunter</a>
+  {% endif %}
+</p>
+<form method="post" action="{% url 'livre_supprimer' livre.pk %}" onsubmit="return confirm('Supprimer ce livre ?');">
+  {% csrf_token %}<button class="danger">Supprimer</button>
+</form>
+
+<h2>Historique des emprunts</h2>
+<ul>
+  {% for e in livre.emprunts.all %}
+    <li>{{ e.adherent }} — le {{ e.date_emprunt|date:"d/m/Y" }}
+      {% if e.date_retour %}(rendu le {{ e.date_retour|date:"d/m/Y" }}){% else %}<strong>(en cours)</strong>{% endif %}</li>
+  {% empty %}
+    <li>Jamais emprunté.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
