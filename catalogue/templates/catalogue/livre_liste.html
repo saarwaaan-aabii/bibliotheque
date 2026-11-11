@@ -2,6 +2,11 @@
 {% block content %}
 <h1>Catalogue ({{ livres|length }} livre{{ livres|length|pluralize }})</h1>
 <p><a class="btn" href="{% url 'livre_creer' %}">+ Nouveau livre</a></p>
+<form method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Titre ou auteur" aria-label="Rechercher un livre">
+  <button type="submit">Rechercher</button>
+  {% if q %}<a href="{% url 'livre_liste' %}">Effacer</a>{% endif %}
+</form>
 <table>
   <thead><tr><th>Titre</th><th>Auteur</th><th>Année</th><th>Disponibilité</th></tr></thead>
   <tbody>
