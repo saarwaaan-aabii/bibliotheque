@@ -1,4 +1,5 @@
 {% extends "catalogue/base.html" %}
+{% load static %}
 {% block title %}{{ livre.titre }}{% endblock %}
 {% block content %}
 <h1>{{ livre.titre|upper }}</h1>
@@ -29,7 +30,8 @@
 </form>
 
 <h2>Historique des emprunts</h2>
-<ul>
+<button type="button" class="toggle" aria-expanded="false" aria-controls="historique">Afficher l'historique</button>
+<ul id="historique" hidden>
   {% for e in livre.emprunts.all %}
     <li>{{ e.adherent }} — le {{ e.date_emprunt|date:"d/m/Y" }}
       {% if e.date_retour %}(rendu le {{ e.date_retour|date:"d/m/Y" }}){% else %}<strong>(en cours)</strong>{% endif %}</li>
@@ -38,3 +40,4 @@
   {% endfor %}
 </ul>
 {% endblock %}
+{% block scripts %}<script src="{% static 'catalogue/app.js' %}" defer></script>{% endblock %}
