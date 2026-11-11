@@ -26,7 +26,82 @@ Garder ouverts : le navigateur sur http://127.0.0.1:8000/, l'éditeur de code et
 | 6 | Choisir *L'Étranger* et valider quand même | Refusé par le serveur : c'est la **règle métier**. L'AJAX n'est qu'une indication. | `models.py` → `Emprunt.clean()` |
 | 7 | Ouvrir `/api/livres/`, puis `/api/livres/999/` | API REST avec DRF : liste, détail, création (formulaire en bas de page), erreurs 400 et 404. | `serializers.py`, `api.py` |
 | 8 | Terminal : `python manage.py importer_livres donnees/livres.xml` | Lecture XML → dictionnaires Python → objets `Livre`. Tout ou rien avec `transaction.atomic`. Puis « Exporter en JSON » sur l'accueil. | `import_export.py` |
-| 9 | Terminal : `python manage.py test` | 13 tests, dont les 2 règles métier. GitHub Actions les relance à chaque pull request. | `tests.py`, `.github/workflows/tests.yml` |
+| 9 | Terminal : `python manage.py test` | 15 tests : 13 tests Django (dont les 2 règles métier) et 2 tests de bout en bout dans un vrai navigateur. GitHub Actions les relance à chaque pull request. | `tests.py`, `tests_e2e.py`, `.github/workflows/tests.yml` |
+
+## Les tests de bout en bout (e2e) expliqués
+
+### Pourquoi ces tests ?
+
+Les tests de `tests.py` utilisent `self.client` : un faux navigateur qui envoie des requêtes et lit le HTML,
+mais **n'exécute pas le JavaScript**. Ils ne peuvent donc pas vérifier que le bouton « Afficher
+l'historique » marche, ni que `fetch()` affiche bien le résultat.
+
+Un test **de bout en bout** (e2e, *end-to-end*) teste toute la chaîne, comme un vrai visiteur :
+
+```
+navigateur (Chromium) ──clic──► JavaScript (app.js) ──fetch()──► serveur Django ──► base de données
+        ▲                                                                              │
+        └──────────────────── affichage du résultat dans la page ◄────────────────────┘
+```
+
+### Ce que vérifient les 2 tests (`catalogue/tests_e2e.py`)
+
+| Test | Étapes |
+|---|---|
+| `test_afficher_masquer_historique` | ouvrir *Les Misérables* → l'historique est caché → clic → visible, contient « Karim Durand », `aria-expanded="true"`, texte « Masquer l'historique » → clic → caché à nouveau |
+| `test_disponibilite_ajax_sans_rechargement` | ouvrir « Nouvel emprunt » → choisir *L'Étranger* → « Déjà emprunté. » → choisir *La Peste* → « Disponible… » → l'URL n'a pas changé (donc pas de rechargement : c'est bien de l'AJAX) |
+
+### Les outils
+
+| Outil | Rôle |
+|---|---|
+| **Playwright** | pilote un vrai navigateur Chromium depuis Python : ouvrir une page, cliquer, choisir une option, lire le texte |
+| **`StaticLiveServerTestCase`** (Django) | démarre un **vrai serveur Django** pendant le test, avec une base de test et les fichiers statiques (`app.js`) |
+| **`expect(...)`** (Playwright) | vérifie l'état de la page et **attend** automatiquement que le JavaScript ait fini (la réponse de `fetch()` arrive après un court délai) |
+
+### Lecture d'un test
+
+```python
+def test_disponibilite_ajax_sans_rechargement(self):
+    self.page.goto(f"{self.live_server_url}/emprunts/nouveau/")   # ① ouvrir la page
+    url_avant = self.page.url
+    zone = self.page.locator("#disponibilite")
+
+    self.page.select_option("#id_livre", label="L'Étranger")       # ② agir comme un visiteur
+    expect(zone).to_have_text("Déjà emprunté.")                    # ③ vérifier (attend la réponse)
+
+    self.page.select_option("#id_livre", label="La Peste")
+    expect(zone).to_have_text("Disponible — l'enregistrement vérifiera à nouveau.")
+    self.assertEqual(self.page.url, url_avant)                     # pas de rechargement de page
+```
+
+Même structure que les autres tests : **préparer**, **agir**, **vérifier**.
+
+### Trois détails techniques
+
+1. **`serialized_rollback = True`** : le serveur de test vide la base après chaque test. Cette option
+   demande à Django de **recharger les données fictives** avant chaque test.
+2. **Le navigateur démarre dans `setUp`** (pour chaque test) : Playwright lance une boucle `asyncio`, et
+   Django doit avoir rechargé les données **avant** qu'elle démarre (`DJANGO_ALLOW_ASYNC_UNSAFE` autorise
+   Django à fonctionner à côté de cette boucle).
+3. **Test ignoré si Playwright manque** (`@unittest.skipIf`) : avec seulement `requirements.txt`,
+   `python manage.py test` affiche `OK (skipped=2)` au lieu d'échouer.
+
+### Installation et lancement
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m playwright install chromium
+python manage.py test
+```
+
+`requirements-dev.txt` = `requirements.txt` + Playwright : l'application elle-même n'a **pas** de
+dépendance en plus. Dans GitHub Actions, la CI installe Playwright et Chromium, puis lance les 15 tests.
+
+### Preuve que les tests servent à quelque chose
+
+En cassant volontairement `app.js` (le bouton, puis l'URL du `fetch()`), chacun des 2 tests **échoue**.
+Ils détectent donc une vraie panne du JavaScript, qu'aucun test de `tests.py` ne verrait.
 
 ## Questions possibles et réponses
 
@@ -66,6 +141,15 @@ Pour charger l'auteur de chaque livre dans la même requête SQL, au lieu d'une 
 
 **Pourquoi `fetch()` et pas jQuery ?**
 Le cahier des charges demande `fetch()` ; il est intégré au navigateur, donc aucune bibliothèque à ajouter.
+
+**Quelle différence entre les tests de `tests.py` et ceux de `tests_e2e.py` ?**
+`tests.py` teste le serveur (formulaires, vues, API) sans navigateur : c'est rapide, mais le JavaScript
+n'est pas exécuté. `tests_e2e.py` ouvre un vrai navigateur et teste le JavaScript et le serveur ensemble,
+comme un visiteur.
+
+**Pourquoi Playwright est-il dans `requirements-dev.txt` et pas dans `requirements.txt` ?**
+Il ne sert qu'aux tests. Pour utiliser l'application, `requirements.txt` suffit ; sans Playwright, les
+2 tests sont simplement ignorés.
 
 ## En cas de problème pendant la démo
 
