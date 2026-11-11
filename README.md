@@ -17,7 +17,7 @@ Technologies : Python 3.12, Django, Django REST Framework, SQLite, HTML/CSS, Jav
 | Pages dynamiques | recherche par titre ou auteur ; afficher/masquer l'historique d'un livre ; vérification de disponibilité en AJAX (`fetch()`) sans rechargement |
 | API REST | liste, détail et création de livres (DRF), validation par serializer, codes 200/201/400/404/405 |
 | JSON / XML | import de livres depuis un fichier local `.json` ou `.xml` ; export du catalogue en JSON |
-| Tests | 13 tests automatisés, lancés aussi par GitHub Actions à chaque pull request |
+| Tests | 13 tests Django + 2 tests de bout en bout (navigateur réel, Playwright), lancés aussi par GitHub Actions à chaque pull request |
 
 ## Installation et lancement
 
@@ -84,8 +84,20 @@ python manage.py test
 13 tests dans `catalogue/tests.py` : règles métier des emprunts, validation de l'ISBN, page liste et
 recherche, vue JSON de disponibilité, API (liste, détail, création, erreurs), import/export JSON/XML.
 
-Les mêmes vérifications (`check`, `makemigrations --check`, `test`) sont lancées automatiquement par
-GitHub Actions à chaque pull request (`.github/workflows/tests.yml`).
+**Tests de bout en bout (facultatifs)** : `catalogue/tests_e2e.py` ouvre un vrai navigateur (Chromium)
+sur un serveur Django de test, pour vérifier le JavaScript : afficher/masquer l'historique et la
+vérification de disponibilité en AJAX sans rechargement. Ils demandent Playwright :
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m playwright install chromium
+python manage.py test
+```
+
+Sans Playwright installé, ces 2 tests sont simplement ignorés (`skipped`).
+
+GitHub Actions lance à chaque pull request `check`, `makemigrations --check` et **tous** les tests,
+y compris ceux de bout en bout (`.github/workflows/tests.yml`).
 
 ## Routes principales
 
@@ -136,6 +148,7 @@ catalogue/
   templates/, static/    templates HTML, CSS et JavaScript (app.js)
   migrations/            schéma et données fictives
   tests.py               tests automatisés
+  tests_e2e.py           tests de bout en bout (navigateur, Playwright)
 donnees/                 fichiers d'exemple livres.json et livres.xml
 ```
 
