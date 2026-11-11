@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<livres>
+  <livre>
+    <titre>Bel-Ami</titre>
+    <auteur_nom>Maupassant</auteur_nom>
+    <auteur_prenom>Guy de</auteur_prenom>
+    <isbn>9782253009375</isbn>
+    <annee>1885</annee>
+  </livre>
+  <livre>
+    <titre>Madame Bovary</titre>
+    <auteur_nom>Flaubert</auteur_nom>
+    <auteur_prenom>Gustave</auteur_prenom>
+    <isbn>9782070413119</isbn>
+    <annee>1857</annee>
+  </livre>
+</livres>
