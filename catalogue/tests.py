@@ -1,7 +1,12 @@
+import json
+from pathlib import Path
+
+from django.conf import settings
 from django.test import TestCase
 
 from .forms import EmpruntForm, LivreForm
-from .models import MAX_EMPRUNTS, Adherent, Emprunt, Livre
+from .import_export import exporter_json, importer_livres, lire_json, lire_xml
+from .models import MAX_EMPRUNTS, Adherent, Auteur, Emprunt, Livre
 
 
 class RegleMetierEmpruntTests(TestCase):
@@ -83,3 +88,44 @@ class ApiLivresTests(TestCase):
         livre = Livre.objects.first()
         response = self.client.delete(f"/api/livres/{livre.pk}/")
         self.assertEqual(response.status_code, 405)
+
+
+class ImportExportTests(TestCase):
+    DONNEES = Path(settings.BASE_DIR) / "donnees"
+
+    def test_lecture_json_et_xml_en_objets_python(self):
+        depuis_json = lire_json((self.DONNEES / "livres.json").read_text(encoding="utf-8"))
+        depuis_xml = lire_xml((self.DONNEES / "livres.xml").read_text(encoding="utf-8"))
+        self.assertEqual(depuis_json[0]["titre"], "Germinal")
+        self.assertEqual(depuis_xml[1], {"titre": "Madame Bovary", "auteur_nom": "Flaubert",
+                                         "auteur_prenom": "Gustave", "isbn": "9782070413119", "annee": "1857"})
+        self.assertEqual(importer_livres(depuis_json + depuis_xml), 4)
+        self.assertEqual(importer_livres(depuis_json), 0)  # ISBN déjà présents : ignorés
+        self.assertEqual(Livre.objects.get(isbn="9782253009375").auteur.nom, "Maupassant")
+
+    def test_fichiers_invalides_refuses(self):
+        for texte in ["{pas du json", '{"titre": "seul"}']:
+            with self.assertRaises(ValueError):
+                lire_json(texte)
+        for texte in ["<livres><livre>", "<autres/>", '<!DOCTYPE x [<!ENTITY a "b">]><livres/>']:
+            with self.assertRaises(ValueError):
+                lire_xml(texte)
+
+    def test_import_tout_ou_rien(self):
+        avant = (Livre.objects.count(), Auteur.objects.count())
+        livres = [
+            {"titre": "Valide", "auteur_nom": "Nouvel", "auteur_prenom": "", "isbn": "1234567890", "annee": 2000},
+            {"titre": "ISBN faux", "auteur_nom": "Autre", "auteur_prenom": "", "isbn": "12-AB", "annee": 2000},
+        ]
+        with self.assertRaises(ValueError):
+            importer_livres(livres)
+        self.assertEqual((Livre.objects.count(), Auteur.objects.count()), avant)
+
+    def test_export_json(self):
+        donnees = json.loads(exporter_json())
+        self.assertEqual(len(donnees), Livre.objects.count())
+        self.assertEqual(donnees[0]["titre"], "L'Étranger")
+        response = self.client.get("/livres/export.json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
+        self.assertIn("attachment", response["Content-Disposition"])
