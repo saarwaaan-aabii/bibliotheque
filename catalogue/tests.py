@@ -53,3 +53,33 @@ class PagesTests(TestCase):
         self.assertEqual(self.client.get(f"/livres/{peste.pk}/disponibilite/").json(), {"disponible": True})
         self.assertEqual(self.client.get("/livres/9999/disponibilite/").status_code, 404)
         self.assertEqual(self.client.post(f"/livres/{peste.pk}/disponibilite/").status_code, 405)
+
+
+class ApiLivresTests(TestCase):
+    def test_liste_et_detail(self):
+        response = self.client.get("/api/livres/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), Livre.objects.count())
+        etranger = Livre.objects.get(titre="L'Étranger")
+        data = self.client.get(f"/api/livres/{etranger.pk}/").json()
+        self.assertEqual(data["auteur_nom"], "Albert Camus")
+        self.assertFalse(data["disponible"])
+        self.assertEqual(self.client.get("/api/livres/9999/").status_code, 404)
+
+    def test_creation_valide_et_invalide(self):
+        auteur = Livre.objects.first().auteur
+        livre = {"titre": "Nouveau", "auteur": auteur.pk, "isbn": "2-07-036002-4", "annee": 2000}
+        response = self.client.post("/api/livres/", livre, content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["isbn"], "2070360024")
+        self.assertTrue(Livre.objects.filter(isbn="2070360024").exists())
+
+        invalide = {"titre": "", "auteur": 9999, "isbn": "12-AB"}
+        response = self.client.post("/api/livres/", invalide, content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(set(response.json()), {"titre", "auteur", "isbn"})
+
+    def test_detail_en_lecture_seule(self):
+        livre = Livre.objects.first()
+        response = self.client.delete(f"/api/livres/{livre.pk}/")
+        self.assertEqual(response.status_code, 405)
