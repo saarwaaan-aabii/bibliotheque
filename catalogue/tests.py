@@ -45,3 +45,11 @@ class PagesTests(TestCase):
         self.assertEqual([livre.titre for livre in response.context["livres"]], ["L'Étranger", "La Peste"])
         response = self.client.get("/", {"q": "misérables"})
         self.assertEqual([livre.titre for livre in response.context["livres"]], ["Les Misérables"])
+
+    def test_disponibilite_json(self):
+        etranger = Livre.objects.get(titre="L'Étranger")
+        peste = Livre.objects.get(titre="La Peste")
+        self.assertEqual(self.client.get(f"/livres/{etranger.pk}/disponibilite/").json(), {"disponible": False})
+        self.assertEqual(self.client.get(f"/livres/{peste.pk}/disponibilite/").json(), {"disponible": True})
+        self.assertEqual(self.client.get("/livres/9999/disponibilite/").status_code, 404)
+        self.assertEqual(self.client.post(f"/livres/{peste.pk}/disponibilite/").status_code, 405)
