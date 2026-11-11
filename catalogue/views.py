@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -9,7 +10,10 @@ from .models import Emprunt, Livre
 
 def livre_liste(request):
     livres = Livre.objects.select_related("auteur")
-    return render(request, "catalogue/livre_liste.html", {"livres": livres})
+    q = request.GET.get("q", "").strip()
+    if q:
+        livres = livres.filter(Q(titre__icontains=q) | Q(auteur__nom__icontains=q))
+    return render(request, "catalogue/livre_liste.html", {"livres": livres, "q": q})
 
 
 def livre_detail(request, pk):

@@ -39,3 +39,9 @@ class PagesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Les Misérables")
         self.assertContains(response, "Emprunté")
+
+    def test_recherche_par_titre_ou_auteur(self):
+        response = self.client.get("/", {"q": "  camus  "})
+        self.assertEqual([livre.titre for livre in response.context["livres"]], ["L'Étranger", "La Peste"])
+        response = self.client.get("/", {"q": "misérables"})
+        self.assertEqual([livre.titre for livre in response.context["livres"]], ["Les Misérables"])
