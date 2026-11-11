@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import api, views
 
 urlpatterns = [
     path("", views.livre_liste, name="livre_liste"),
@@ -11,4 +11,7 @@ urlpatterns = [
     path("livres/<int:pk>/supprimer/", views.livre_supprimer, name="livre_supprimer"),
     path("emprunts/nouveau/", views.emprunt_creer, name="emprunt_creer"),
     path("emprunts/<int:pk>/retour/", views.emprunt_retour, name="emprunt_retour"),
+    # API REST
+    path("api/livres/", api.LivreListeAPI.as_view(), name="api_livre_liste"),
+    path("api/livres/<int:pk>/", api.LivreDetailAPI.as_view(), name="api_livre_detail"),
 ]
