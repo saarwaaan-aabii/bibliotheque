@@ -9,6 +9,7 @@ urlpatterns = [
     path("livres/<int:pk>/modifier/", views.livre_form, name="livre_modifier"),
     path("livres/<int:pk>/disponibilite/", views.livre_disponibilite, name="livre_disponibilite"),
     path("livres/<int:pk>/supprimer/", views.livre_supprimer, name="livre_supprimer"),
+    path("livres/export.json", views.livres_export_json, name="livres_export_json"),
     path("emprunts/nouveau/", views.emprunt_creer, name="emprunt_creer"),
     path("emprunts/<int:pk>/retour/", views.emprunt_retour, name="emprunt_retour"),
     # API REST
