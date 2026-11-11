@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
 
 from .forms import EmpruntForm, LivreForm
 from .models import Emprunt, Livre
@@ -23,6 +25,14 @@ def livre_detail(request, pk):
         "livre": livre,
         "emprunt_en_cours": emprunt_en_cours,
     })
+
+
+@never_cache
+@require_GET
+def livre_disponibilite(request, pk):
+    """Lecture seule, pour l'appel AJAX : n'emprunte et ne réserve rien."""
+    livre = get_object_or_404(Livre, pk=pk)
+    return JsonResponse({"disponible": livre.disponible})
 
 
 def livre_form(request, pk=None):
