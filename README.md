@@ -21,14 +21,16 @@ Technologies : Python 3.12, Django, Django REST Framework, SQLite, HTML/CSS, Jav
 
 ## Installation et lancement
 
-Prérequis : Python 3.12 et Git. Toutes les commandes se lancent depuis la racine du dépôt.
+Prérequis : **Python 3.12 ou plus** (exigé par Django 6) et Git. Toutes les commandes se lancent
+depuis la racine du dépôt.
 
 ```bash
 git clone https://github.com/saarwaaan-aabii/bibliotheque.git
 cd bibliotheque
 ```
 
-**macOS / Linux**
+**macOS / Linux** (vérifier d'abord `python3 --version` ; si la version est inférieure à 3.12,
+utiliser `python3.12` à la place de `python3`)
 
 ```bash
 python3 -m venv .venv
@@ -46,7 +48,12 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-Ouvrir ensuite http://127.0.0.1:8000/.
+Ouvrir ensuite http://127.0.0.1:8000/. Arrêter le serveur avec `Ctrl+C`.
+
+> **Dans la suite du README, `python` désigne le Python de l'environnement virtuel.**
+> Remplacer `python` par `./.venv/bin/python` (macOS / Linux) ou `.\.venv\Scripts\python.exe` (Windows),
+> ou bien activer l'environnement une fois : `source .venv/bin/activate` (macOS / Linux) ou
+> `.\.venv\Scripts\Activate.ps1` (Windows).
 
 `migrate` crée la base SQLite **et** charge les données fictives (migration
 `0002_donnees_fictives`) : 3 auteurs, 5 livres, 2 adhérents, 2 emprunts (dont *L'Étranger* en cours).
