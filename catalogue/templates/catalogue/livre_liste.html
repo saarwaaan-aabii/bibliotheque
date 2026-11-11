@@ -1,7 +1,8 @@
 {% extends "catalogue/base.html" %}
 {% block content %}
 <h1>Catalogue ({{ livres|length }} livre{{ livres|length|pluralize }})</h1>
-<p><a class="btn" href="{% url 'livre_creer' %}">+ Nouveau livre</a></p>
+<p><a class="btn" href="{% url 'livre_creer' %}">+ Nouveau livre</a>
+   <a href="{% url 'livres_export_json' %}">Exporter en JSON</a></p>
 <form method="get">
   <input type="search" name="q" value="{{ q }}" placeholder="Titre ou auteur" aria-label="Rechercher un livre">
   <button type="submit">Rechercher</button>
